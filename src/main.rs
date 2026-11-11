@@ -303,10 +303,7 @@ impl App {
         } else {
             "Draw 3"
         };
-        let _ = self.win.set_title(&format!(
-            "Klondike ({mode}) - Deal {} - Solitaire",
-            self.deal
-        ));
+        let _ = self.win.set_title(&format!("Klondike ({mode}) - Solitaire"));
     }
 
     fn set_status(&mut self, s: String) {
