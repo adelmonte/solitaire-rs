@@ -210,13 +210,6 @@ impl Sprite {
         true
     }
 
-    /// Turn over the moment the move starts instead of flipping on the way.
-    pub fn turn_at_start(&mut self) {
-        if let Some(a) = &mut self.anim {
-            a.flip_from = if self.up { 1.0 } else { 0.0 };
-        }
-    }
-
     pub fn finish(&mut self) {
         self.x = self.tx;
         self.y = self.ty;

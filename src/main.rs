@@ -387,9 +387,6 @@ impl App {
         let deal_speed = ((v.w * v.w + v.h * v.h) as f32).sqrt() / DURATION_DEAL;
         let mut pos = Vec::with_capacity(24);
         let mut drawn = 0;
-        let drawing = self.st.piles[WASTE]
-            .iter()
-            .any(|c| self.sprites[c.id as usize].pile == STOCK);
         for p in 0..NPILES {
             self.lay.positions(&self.st, p, &mut pos);
             for (i, c) in self.st.piles[p].iter().enumerate() {
@@ -397,7 +394,6 @@ impl App {
                 let (tx, ty) = pos[i];
                 let new_pile = s.pile != p;
                 let from_stock = p == WASTE && s.pile == STOCK;
-                let to_stock = p == STOCK && s.pile == WASTE;
                 s.z = zbase(p) + i as i32;
                 s.pile = p;
                 if s.tx == tx && s.ty == ty && s.up == c.up && mode != Mode::Now {
@@ -405,8 +401,6 @@ impl App {
                 }
                 let ms = match mode {
                     Mode::Now => 0.0,
-                    // The old fan closes up at once under the new cards.
-                    Mode::Ms(_) if drawing && p == WASTE && !new_pile => 0.0,
                     Mode::Ms(ms) => ms,
                     Mode::Deal => ((tx - s.x).hypot(ty - s.y) / deal_speed).round(),
                 };
@@ -425,9 +419,6 @@ impl App {
                     self.cw,
                     self.ch,
                 );
-                if from_stock || to_stock {
-                    s.turn_at_start();
-                }
             }
         }
         if self.peek.is_some() {
@@ -1371,7 +1362,7 @@ impl App {
     fn drawn_for(&self, c: usize) -> Drawn {
         let s = &self.sprites[c];
         let img = if s.flip >= 0.5 { c as u8 } else { 52 };
-        let squash = ((2.0_f32 * s.flip - 1.0).abs() * self.cw as f32).round() as i32;
+        let squash = ((std::f32::consts::PI * s.flip).cos().abs() * self.cw as f32).round() as i32;
         let dim = if self.hl >> c & 1 != 0 { 128 } else { 0 };
         let layer = if self.dragged_mask() >> c & 1 != 0 {
             2
@@ -1519,7 +1510,13 @@ impl App {
     fn timeout_ms(&self) -> i32 {
         let busy = self.animating() || self.rain.as_ref().is_some_and(|r| !r.finished);
         if busy {
-            return FRAME_MS as i32;
+            // Animation runs off the compositor's frame callbacks; the
+            // timer only covers frames that had nothing to show.
+            return if self.win.frame_pending() {
+                100
+            } else {
+                FRAME_MS as i32
+            };
         }
         let now = Instant::now();
         let mut t = i32::MAX;
@@ -1707,7 +1704,9 @@ fn main() {
             break;
         }
         app.tick();
-        app.render();
+        if !app.win.frame_pending() {
+            app.render();
+        }
         let t = app.timeout_ms();
         app.win.wait(t);
     }

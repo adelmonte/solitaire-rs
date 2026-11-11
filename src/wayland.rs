@@ -4,7 +4,7 @@
 
 use crate::gfx::{Image, Rect};
 use smithay_client_toolkit::{
-    compositor::{CompositorHandler, CompositorState},
+    compositor::{CompositorHandler, CompositorState, FrameCallbackData},
     dispatch2::Dispatch2,
     output::{OutputHandler, OutputState},
     registry::{ProvidesRegistryState, RegistryState},
@@ -30,6 +30,7 @@ use smithay_client_toolkit::{
 use std::collections::VecDeque;
 use std::os::fd::AsRawFd;
 use std::os::unix::fs::FileExt;
+use std::time::{Duration, Instant};
 use wayland_client::{
     Connection, EventQueue, Proxy, QueueHandle, WEnum,
     globals::{GlobalList, registry_queue_init},
@@ -106,6 +107,9 @@ struct State {
     fullscreen: bool,
     pointer_pos: (f64, f64),
     scroll_acc: f64,
+    /// When we last committed and asked for a frame callback that hasn't
+    /// come back yet.
+    frame_wait: Option<Instant>,
 }
 
 impl State {
@@ -186,6 +190,7 @@ impl Window {
             fullscreen: false,
             pointer_pos: (0.0, 0.0),
             scroll_acc: 0.0,
+            frame_wait: None,
         };
         while !st.configured {
             queue.blocking_dispatch(&mut st)?;
@@ -284,6 +289,15 @@ impl Window {
         }
     }
 
+    /// True while the compositor hasn't yet shown our last frame, so
+    /// drawing another would be wasted or out of step with the display. A
+    /// hidden window gets no callbacks; don't wait on those for ever.
+    pub fn frame_pending(&self) -> bool {
+        self.st
+            .frame_wait
+            .is_some_and(|t| t.elapsed() < Duration::from_millis(250))
+    }
+
     /// Show region `r` of `img` (window sized).
     pub fn present(&mut self, img: &Image, r: Rect) -> Res<()> {
         let r = r.intersect(&img.rect());
@@ -331,6 +345,8 @@ impl Window {
         let surface = self.st.window.wl_surface();
         surface.damage_buffer(r.x, r.y, r.w, r.h);
         b.buffer.attach_to(surface)?;
+        surface.frame(&self.queue.handle(), FrameCallbackData(surface.clone()));
+        self.st.frame_wait = Some(Instant::now());
         surface.commit();
         self.conn.flush()?;
         Ok(())
@@ -461,7 +477,9 @@ impl CompositorHandler for State {
         _: wl_output::Transform,
     ) {
     }
-    fn frame(&mut self, _: &Connection, _: &QueueHandle<Self>, _: &wl_surface::WlSurface, _: u32) {}
+    fn frame(&mut self, _: &Connection, _: &QueueHandle<Self>, _: &wl_surface::WlSurface, _: u32) {
+        self.frame_wait = None;
+    }
     fn surface_enter(
         &mut self,
         _: &Connection,
