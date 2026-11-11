@@ -28,15 +28,16 @@ use wayland::{ALT, CTRL, Ev, SHIFT, Window, keys};
 // KPat's timings (speeds.h), in ms.
 const DURATION_MOVE: f32 = 230.0;
 const DURATION_DEAL: f32 = 1500.0;
-const DURATION_DEMO: f32 = 300.0;
+const DURATION_DEMO: f32 = DURATION_TURN;
 const DURATION_FANCYSHOW: f32 = 350.0;
-const DURATION_AUTODROP: f32 = 250.0;
+const DURATION_AUTODROP: f32 = DURATION_TURN;
 const DURATION_AUTODROP_MIN: f32 = 80.0;
 const AUTODROP_SPEEDUP: f32 = 0.90;
 const TIME_BETWEEN_MOVES: f32 = 250.0;
-// Turning cards between stock and waste takes long enough to be seen as
-// a turn; cards drawn together leave the stock one after another.
-const DURATION_DRAW: f32 = 380.0;
+// Turning a card over takes long enough to be seen as a turn, and the
+// automatic moves go at the same pace. Cards drawn together leave the
+// stock one after another.
+const DURATION_TURN: f32 = 380.0;
 const DRAW_STAGGER: f32 = 110.0;
 const DOUBLE_CLICK_MS: u32 = 400;
 const SOLVER_LIMIT: u64 = 400_000;
@@ -396,7 +397,7 @@ impl App {
                 let (tx, ty) = pos[i];
                 let new_pile = s.pile != p;
                 let from_stock = p == WASTE && s.pile == STOCK;
-                let turned = from_stock || (p == STOCK && s.pile == WASTE);
+                let turned = s.up != c.up;
                 s.z = zbase(p) + i as i32;
                 s.pile = p;
                 if s.tx == tx && s.ty == ty && s.up == c.up && mode != Mode::Now {
@@ -404,7 +405,7 @@ impl App {
                 }
                 let ms = match mode {
                     Mode::Now => 0.0,
-                    Mode::Ms(ms) if turned => ms.max(DURATION_DRAW),
+                    Mode::Ms(ms) if turned => ms.max(DURATION_TURN),
                     Mode::Ms(ms) => ms,
                     Mode::Deal => ((tx - s.x).hypot(ty - s.y) / deal_speed).round(),
                 };
