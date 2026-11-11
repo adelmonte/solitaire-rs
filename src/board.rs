@@ -152,7 +152,8 @@ fn ease(t: f32) -> f32 {
 }
 
 impl Sprite {
-    /// Move towards a new resting place over `ms` milliseconds.
+    /// Move towards a new resting place over `ms` milliseconds, beginning
+    /// at `start` (the sprite waits where it is until then).
     pub fn go(
         &mut self,
         tx: f32,
@@ -160,7 +161,7 @@ impl Sprite {
         up: bool,
         ms: f32,
         raised: bool,
-        now: Instant,
+        start: Instant,
         cw: i32,
         ch: i32,
     ) {
@@ -182,7 +183,7 @@ impl Sprite {
         self.anim = Some(Anim {
             from: (self.x, self.y),
             flip_from: self.flip,
-            start: now,
+            start,
             dur: ms / 1000.0,
             flip_factor: ((dx * dx + dy * dy) / diag2).sqrt().max(1.0),
             raised: raised || self.anim.is_some_and(|a| a.raised),
@@ -197,7 +198,7 @@ impl Sprite {
         self.x = a.from.0 + (self.tx - a.from.0) * e;
         self.y = a.from.1 + (self.ty - a.from.1) * e;
         let target = if self.up { 1.0 } else { 0.0 };
-        let ft = (t * a.flip_factor).min(1.0);
+        let ft = (e * a.flip_factor).min(1.0);
         self.flip = a.flip_from + (target - a.flip_from) * ft;
         if t >= 1.0 {
             self.finish();

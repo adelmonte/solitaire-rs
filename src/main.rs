@@ -34,6 +34,8 @@ const DURATION_AUTODROP: f32 = 250.0;
 const DURATION_AUTODROP_MIN: f32 = 80.0;
 const AUTODROP_SPEEDUP: f32 = 0.90;
 const TIME_BETWEEN_MOVES: f32 = 250.0;
+// Cards drawn together leave the stock one after another.
+const DRAW_STAGGER: f32 = 60.0;
 const DOUBLE_CLICK_MS: u32 = 400;
 const SOLVER_LIMIT: u64 = 400_000;
 const FRAME_MS: f32 = 1000.0 / 60.0;
@@ -385,12 +387,14 @@ impl App {
         let deal_speed = ((v.w * v.w + v.h * v.h) as f32).sqrt() / DURATION_DEAL;
         let mut pos = Vec::with_capacity(24);
         let n = self.draw_n();
+        let mut drawn = 0;
         for p in 0..NPILES {
             self.lay.positions(&self.st, p, n, &mut pos);
             for (i, c) in self.st.piles[p].iter().enumerate() {
                 let s = &mut self.sprites[c.id as usize];
                 let (tx, ty) = pos[i];
                 let new_pile = s.pile != p;
+                let from_stock = p == WASTE && s.pile == STOCK;
                 s.z = zbase(p) + i as i32;
                 s.pile = p;
                 if s.tx == tx && s.ty == ty && s.up == c.up && mode != Mode::Now {
@@ -401,13 +405,18 @@ impl App {
                     Mode::Ms(ms) => ms,
                     Mode::Deal => ((tx - s.x).hypot(ty - s.y) / deal_speed).round(),
                 };
+                let mut start = now;
+                if from_stock && matches!(mode, Mode::Ms(_)) {
+                    start += Duration::from_millis((drawn as f32 * DRAW_STAGGER) as u64);
+                    drawn += 1;
+                }
                 s.go(
                     tx,
                     ty,
                     c.up,
                     ms,
                     new_pile && mode != Mode::Deal,
-                    now,
+                    start,
                     self.cw,
                     self.ch,
                 );
