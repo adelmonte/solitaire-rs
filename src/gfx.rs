@@ -181,7 +181,8 @@ impl Image {
     }
 
     /// Blit horizontally squashed to `dw` columns (card flip), centred in
-    /// the source width.
+    /// the source width. Each column averages the source columns it covers,
+    /// so the artwork doesn't shimmer as the width changes.
     pub fn blit_squashed(&mut self, src: &Image, dx: i32, dy: i32, dw: i32, clip: Rect, dim: u8) {
         if dw <= 0 {
             return;
@@ -196,9 +197,22 @@ impl Image {
         let keep = 255 - dim as u32;
         for y in c.y..c.bottom() {
             let sy = y - dy;
+            let srow = &src.px[(sy * src.w) as usize..((sy + 1) * src.w) as usize];
             for x in c.x..c.right() {
-                let sx = ((x - x0) as i64 * src.w as i64 / dw as i64) as i32;
-                let s = scale_rgb(src.px[(sy * src.w + sx) as usize], keep);
+                let s0 = ((x - x0) as i64 * src.w as i64 / dw as i64) as usize;
+                let s1 = (((x - x0 + 1) as i64 * src.w as i64 / dw as i64) as usize).max(s0 + 1);
+                let n = (s1 - s0) as u32;
+                let mut sum = [0u32; 4];
+                for p in &srow[s0..s1] {
+                    for (k, ch) in sum.iter_mut().enumerate() {
+                        *ch += p >> (8 * k) & 0xff;
+                    }
+                }
+                let avg = sum
+                    .iter()
+                    .enumerate()
+                    .fold(0, |a, (k, ch)| a | (ch / n) << (8 * k));
+                let s = scale_rgb(avg, keep);
                 let d = &mut self.px[(y * self.w + x) as usize];
                 *d = over(*d, s);
             }

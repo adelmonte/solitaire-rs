@@ -112,6 +112,9 @@ pub struct Anim {
     start: Instant,
     dur: f32,
     flip_factor: f32,
+    /// Turning over: ease in and out, so the turn sits in the middle of
+    /// the move instead of being over in the first few frames.
+    turning: bool,
     pub raised: bool,
 }
 
@@ -186,6 +189,7 @@ impl Sprite {
             start,
             dur: ms / 1000.0,
             flip_factor: ((dx * dx + dy * dy) / diag2).sqrt().max(1.0),
+            turning: self.flip != target_flip,
             raised: raised || self.anim.is_some_and(|a| a.raised),
         });
     }
@@ -197,7 +201,11 @@ impl Sprite {
             return true;
         }
         let t = (now.saturating_duration_since(a.start).as_secs_f32() / a.dur).min(1.0);
-        let e = ease(t);
+        let e = if a.turning {
+            t * t * (3.0 - 2.0 * t)
+        } else {
+            ease(t)
+        };
         self.x = a.from.0 + (self.tx - a.from.0) * e;
         self.y = a.from.1 + (self.ty - a.from.1) * e;
         let target = if self.up { 1.0 } else { 0.0 };

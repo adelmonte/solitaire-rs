@@ -34,8 +34,10 @@ const DURATION_AUTODROP: f32 = 250.0;
 const DURATION_AUTODROP_MIN: f32 = 80.0;
 const AUTODROP_SPEEDUP: f32 = 0.90;
 const TIME_BETWEEN_MOVES: f32 = 250.0;
-// Cards drawn together leave the stock one after another.
-const DRAW_STAGGER: f32 = 60.0;
+// Turning cards between stock and waste takes long enough to be seen as
+// a turn; cards drawn together leave the stock one after another.
+const DURATION_DRAW: f32 = 380.0;
+const DRAW_STAGGER: f32 = 110.0;
 const DOUBLE_CLICK_MS: u32 = 400;
 const SOLVER_LIMIT: u64 = 400_000;
 const FRAME_MS: f32 = 1000.0 / 60.0;
@@ -394,6 +396,7 @@ impl App {
                 let (tx, ty) = pos[i];
                 let new_pile = s.pile != p;
                 let from_stock = p == WASTE && s.pile == STOCK;
+                let turned = from_stock || (p == STOCK && s.pile == WASTE);
                 s.z = zbase(p) + i as i32;
                 s.pile = p;
                 if s.tx == tx && s.ty == ty && s.up == c.up && mode != Mode::Now {
@@ -401,6 +404,7 @@ impl App {
                 }
                 let ms = match mode {
                     Mode::Now => 0.0,
+                    Mode::Ms(ms) if turned => ms.max(DURATION_DRAW),
                     Mode::Ms(ms) => ms,
                     Mode::Deal => ((tx - s.x).hypot(ty - s.y) / deal_speed).round(),
                 };
@@ -1363,7 +1367,9 @@ impl App {
         let s = &self.sprites[c];
         let img = if s.flip >= 0.5 { c as u8 } else { 52 };
         let squash = ((std::f32::consts::PI * s.flip).cos().abs() * self.cw as f32).round() as i32;
-        let dim = if self.hl >> c & 1 != 0 { 128 } else { 0 };
+        // A card seen nearly edge-on catches less light.
+        let turn = ((1.0 - (std::f32::consts::PI * s.flip).cos().abs()) * 90.0) as u8;
+        let dim = if self.hl >> c & 1 != 0 { 128 } else { turn };
         let layer = if self.dragged_mask() >> c & 1 != 0 {
             2
         } else {
