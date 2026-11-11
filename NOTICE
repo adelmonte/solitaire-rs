@@ -1,0 +1,35 @@
+solitaire-rs is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See COPYING.
+
+Game logic
+----------
+The Klondike rules, deal numbering, automatic drops and hints follow
+KPatience (https://apps.kde.org/kpat/), which is licensed under the GPL
+version 2 or later. KPatience is in turn based on Patience by Paul Olav
+Tvete, released under this license:
+
+  Copyright (C) 1995 Paul Olav Tvete <paul@troll.no>
+
+  Permission to use, copy, modify, and distribute this software and its
+  documentation for any purpose and without fee is hereby granted,
+  provided that the above copyright notice appear in all copies and that
+  both that copyright notice and this permission notice appear in
+  supporting documentation.
+
+  This file is provided AS IS with no warranties of any kind.  The author
+  shall have no liability with respect to the infringement of copyrights,
+  trade secrets or any patents by this file or any part thereof.  In no
+  event will the author be liable for any lost revenue or profits or
+  other special, indirect and consequential damages.
+
+Background
+----------
+assets/cleangreen.svg is the Clean Green theme from KPatience, by Parker
+Coates.
+
+Font
+----
+The UI font is Adobe Helvetica from the X11 bitmap fonts. Its copyright and
+permission notice are in src/font.rs.

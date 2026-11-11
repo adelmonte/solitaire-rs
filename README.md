@@ -98,6 +98,6 @@ KPat's other games, statistics, sounds, keyboard-only card play, and saving or l
 
 ## License
 
-GPL-2.0-or-later, like KPat, whose game logic this follows. The built-in Clean Green
-background comes from KPat (by Parker Coates). The UI font is Adobe Helvetica from the X11
-bitmap fonts; its copyright and permission notice are in `src/font.rs`.
+GPL-3.0-or-later; see `COPYING`. The game logic follows KPat (GPL-2.0-or-later), the
+built-in Clean Green background comes from KPat (by Parker Coates), and the UI font is Adobe
+Helvetica from the X11 bitmap fonts. `NOTICE` has the details.

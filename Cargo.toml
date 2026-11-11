@@ -3,7 +3,7 @@ name = "solitaire-rs"
 version = "0.1.0"
 edition = "2024"
 description = "Windows 95 style Klondike solitaire as one static Wayland binary"
-license = "GPL-2.0-or-later"
+license = "GPL-3.0-or-later"
 repository = "https://github.com/adelmonte/solitaire-rs"
 
 [dependencies]
