@@ -615,12 +615,8 @@ impl App {
                 Some(c) => self.hl |= 1 << c.id,
                 None => self.hl_pile = Some(STOCK),
             },
-            Some(Action::Move { from, idx, to }) => {
+            Some(Action::Move { from, idx, .. }) => {
                 self.hl |= 1 << self.st.piles[from][idx].id;
-                match self.st.piles[to].last() {
-                    Some(c) => self.hl |= 1 << c.id,
-                    None => self.hl_pile = Some(to),
-                }
             }
             None => self.set_status("No hint available.".into()),
         }
