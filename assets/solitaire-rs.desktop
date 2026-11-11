@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Solitaire
+GenericName=Klondike Solitaire
+Comment=Windows 95 style Klondike solitaire
+Exec=solitaire-rs
+Terminal=false
+Categories=Game;CardGame;
+StartupWMClass=solitaire-rs
