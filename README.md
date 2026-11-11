@@ -28,6 +28,8 @@ rendering are all pure Rust inside the binary.
 
 - **Menus, dialogs and status bar** drawn by hand in the Windows 95 style, in a bitmap
   Helvetica (the X11 one), which is about as close as a free font gets to MS Sans Serif.
+- **Draw 3 as Windows plays it.** The waste fans out only the cards of the last draw, so the
+  fan shrinks as you play them, and the game never draws for you.
 - **Raining cards when you win**, Windows 95 style. Click to dismiss it; double-click to deal
   again. The rain carries on if you resize the window or change the card size.
 - **Card size is yours, not the window's.** Ctrl++ and Ctrl+- grow and shrink the cards in

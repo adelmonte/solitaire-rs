@@ -386,15 +386,18 @@ impl App {
         let v = self.view();
         let deal_speed = ((v.w * v.w + v.h * v.h) as f32).sqrt() / DURATION_DEAL;
         let mut pos = Vec::with_capacity(24);
-        let n = self.draw_n();
         let mut drawn = 0;
+        let drawing = self.st.piles[WASTE]
+            .iter()
+            .any(|c| self.sprites[c.id as usize].pile == STOCK);
         for p in 0..NPILES {
-            self.lay.positions(&self.st, p, n, &mut pos);
+            self.lay.positions(&self.st, p, &mut pos);
             for (i, c) in self.st.piles[p].iter().enumerate() {
                 let s = &mut self.sprites[c.id as usize];
                 let (tx, ty) = pos[i];
                 let new_pile = s.pile != p;
                 let from_stock = p == WASTE && s.pile == STOCK;
+                let to_stock = p == STOCK && s.pile == WASTE;
                 s.z = zbase(p) + i as i32;
                 s.pile = p;
                 if s.tx == tx && s.ty == ty && s.up == c.up && mode != Mode::Now {
@@ -402,6 +405,8 @@ impl App {
                 }
                 let ms = match mode {
                     Mode::Now => 0.0,
+                    // The old fan closes up at once under the new cards.
+                    Mode::Ms(_) if drawing && p == WASTE && !new_pile => 0.0,
                     Mode::Ms(ms) => ms,
                     Mode::Deal => ((tx - s.x).hypot(ty - s.y) / deal_speed).round(),
                 };
@@ -420,6 +425,9 @@ impl App {
                     self.cw,
                     self.ch,
                 );
+                if from_stock || to_stock {
+                    s.turn_at_start();
+                }
             }
         }
         if self.peek.is_some() {
@@ -679,18 +687,10 @@ impl App {
                     self.st.autodrop_move(self.set.draw_one)
                 };
                 if let Some(a) = a {
-                    let waste_before = !self.st.piles[WASTE].is_empty();
                     let ms = self.speed_up(DURATION_AUTODROP);
                     // Grouped with the move that triggered it: one undo
                     // step takes back the move and its autodrops.
                     self.act(a, Mode::Ms(ms), false);
-                    // Like KPat's Klondike::drop(): refill an emptied waste.
-                    if waste_before
-                        && self.st.piles[WASTE].is_empty()
-                        && !self.st.piles[STOCK].is_empty()
-                    {
-                        self.act(Action::Draw, Mode::Ms(ms), false);
-                    }
                     self.drop_speed *= AUTODROP_SPEEDUP;
                     self.next_step = Instant::now()
                         + Duration::from_millis(self.speed_up(TIME_BETWEEN_MOVES) as u64);

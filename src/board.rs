@@ -70,7 +70,7 @@ impl Layout {
     }
 
     /// Where every card of `p` sits: (x, y) per card.
-    pub fn positions(&self, st: &State, p: usize, draw_n: usize, out: &mut Vec<(f32, f32)>) {
+    pub fn positions(&self, st: &State, p: usize, out: &mut Vec<(f32, f32)>) {
         out.clear();
         let cards = &st.piles[p];
         let (px, py) = self.pile[p];
@@ -79,7 +79,7 @@ impl Layout {
             let mut x = 0.0;
             for i in 0..n {
                 out.push((px + x * self.cw as f32, py));
-                if i + draw_n >= n {
+                if i + st.fan.max(1) >= n {
                     x += SPREAD;
                 }
             }
@@ -193,6 +193,9 @@ impl Sprite {
     /// Advance; returns true while still animating.
     pub fn tick(&mut self, now: Instant) -> bool {
         let Some(a) = self.anim else { return false };
+        if now < a.start {
+            return true;
+        }
         let t = (now.saturating_duration_since(a.start).as_secs_f32() / a.dur).min(1.0);
         let e = ease(t);
         self.x = a.from.0 + (self.tx - a.from.0) * e;
@@ -205,6 +208,13 @@ impl Sprite {
             return false;
         }
         true
+    }
+
+    /// Turn over the moment the move starts instead of flipping on the way.
+    pub fn turn_at_start(&mut self) {
+        if let Some(a) = &mut self.anim {
+            a.flip_from = if self.up { 1.0 } else { 0.0 };
+        }
     }
 
     pub fn finish(&mut self) {

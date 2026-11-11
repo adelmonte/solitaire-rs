@@ -40,6 +40,9 @@ pub struct State {
     pub piles: [Vec<C>; NPILES],
     /// Cards the player took down from a foundation; autodrop leaves them be.
     pub taken_down: u64,
+    /// How many cards of the last draw are still on the waste; only those
+    /// are fanned out, as in Windows Solitaire.
+    pub fan: usize,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -93,12 +96,15 @@ impl State {
             }
             let w = std::mem::take(&mut self.piles[waste]);
             self.piles[stock] = w.into_iter().rev().map(|c| C { up: false, ..c }).collect();
+            self.fan = 0;
         } else {
+            self.fan = 0;
             for _ in 0..n {
                 let Some(c) = self.piles[stock].pop() else {
                     break;
                 };
                 self.piles[waste].push(C { up: true, ..c });
+                self.fan += 1;
             }
         }
         true
@@ -168,6 +174,9 @@ impl State {
             }
             Action::Move { from, idx, to } => {
                 let moved: Vec<C> = self.piles[from].drain(idx..).collect();
+                if from == WASTE {
+                    self.fan = self.fan.saturating_sub(1);
+                }
                 for c in &moved {
                     let bit = 1u64 << c.id;
                     if is_found(from) && !is_found(to) {
